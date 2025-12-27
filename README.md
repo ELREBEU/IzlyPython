@@ -17,8 +17,7 @@ Ce script Python permet d'automatiser les interactions avec votre compte **Izly*
 
 1.  **Clonez ce dépôt** (ou téléchargez les fichiers) :
     ```bash
-    git clone [https://github.com/votre-username/izly-bot.git](https://github.com/votre-username/izly-bot.git)
-    cd izly-bot
+    git clone https://github.com/ELREBEU/IzlyPython.git
     ```
 
 2.  **Installez les dépendances nécessaires** :
@@ -48,4 +47,4 @@ Pour des raisons de sécurité, vos identifiants ne doivent jamais être écrits
 Lancez simplement le script principal :
 
 ```bash
-python main.py
+python3 main.py
