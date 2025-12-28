@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="49px" height="48px" viewBox="0 0 49 48" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>picto/actu copy 24</title>
+    <defs>
+        <filter id="filter-1">
+            <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0.000000 0 0 0 0 0.000000 0 0 0 0 0.000000 0 0 0 1.000000 0"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linejoin="round">
+        <g id="Artboard" transform="translate(-403.000000, -900.000000)">
+            <g id="picto/actu-copy-24" transform="translate(377.000000, 874.000000)" filter="url(#filter-1)">
+                <g id="Group-21" transform="translate(26.000000, 26.000000)" stroke="#020303" stroke-width="1.2">
+                    <path d="M40.8416,23.1689 C40.8536,23.2679 40.8646,23.3669 40.8756,23.4659" id="Stroke-1" stroke-linecap="round"></path>
+                    <path d="M40.7645,28.4111 C39.3715,37.4251 31.5795,44.3251 22.1755,44.3251 C11.7885,44.3251 3.3665,35.9041 3.3665,25.5151 C3.3665,15.1291 11.7885,6.7051 22.1755,6.7051 C22.5235,6.7051 22.8685,6.7151 23.2115,6.7331" id="Stroke-3" stroke-linecap="round" stroke-dasharray="0.62,4.957"></path>
+                    <path d="M25.6756,7.0302 C25.7736,7.0482 25.8696,7.0672 25.9666,7.0872" id="Stroke-5" stroke-linecap="round"></path>
+                    <path d="M43.5858,22.8242 C43.6958,23.7062 43.7518,24.6032 43.7518,25.5142 C43.7518,37.4312 34.0928,47.0912 22.1758,47.0912 C10.2618,47.0912 0.6008,37.4312 0.6008,25.5142 C0.6008,13.6012 10.2618,3.9382 22.1758,3.9382 C23.6658,3.9382 25.1198,4.0902 26.5238,4.3772" id="Stroke-7" stroke-linecap="round"></path>
+                    <path d="M48.4139,9.9228 C48.4139,15.0718 44.2399,19.2458 39.0909,19.2458 C33.9409,19.2458 29.7679,15.0718 29.7679,9.9228 C29.7679,4.7738 33.9409,0.5998 39.0909,0.5998 C44.2399,0.5998 48.4139,4.7738 48.4139,9.9228 Z" id="Stroke-9"></path>
+                    <line x1="39.0907" y1="5.2617" x2="39.0907" y2="14.5847" id="Stroke-11" stroke-linecap="round"></line>
+                    <line x1="43.7518" y1="9.9228" x2="34.4298" y2="9.9228" id="Stroke-13" stroke-linecap="round"></line>
+                    <path d="M27.3582,35.6308 C20.7792,35.6308 15.4442,33.7978 15.4442,25.5498 C15.4442,18.4698 19.3752,16.1158 24.6492,15.5918" id="Stroke-15" stroke-linecap="round"></path>
+                    <line x1="12.6952" y1="28.2988" x2="22.7762" y2="28.2988" id="Stroke-17" stroke-linecap="round"></line>
+                    <line x1="12.6952" y1="24.6328" x2="24.6092" y2="24.6328" id="Stroke-19" stroke-linecap="round"></line>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
