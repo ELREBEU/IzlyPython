@@ -1,9 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, ChevronDown, LogOut, Globe, ExternalLink } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
 
 const UserDropdown = () => {
     const [isOpen, setIsOpen] = useState(false);
+    const [userProfile, setUserProfile] = useState(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        // Load user profile data
+        const loadProfile = async () => {
+            try {
+                const wallet = await api.wallet.getBalance();
+                const transactions = await api.transactions.getHistory();
+                setUserProfile({
+                    name: "Utilisateur Izly",
+                    email: localStorage.getItem('izly_credentials') ? JSON.parse(localStorage.getItem('izly_credentials')).email : "user@izly.fr",
+                    balance: wallet.balance
+                });
+            } catch (error) {
+                console.error("Error loading profile:", error);
+            }
+        };
+        loadProfile();
+    }, []);
+
+    const handleLogout = () => {
+        // Clear credentials and redirect to login
+        api.auth.logout();
+        navigate('/login');
+    };
 
     return (
         <div className="relative">
@@ -17,13 +44,21 @@ const UserDropdown = () => {
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl py-2 z-50 animate-fade-in text-gray-700">
                     <div className="px-4 py-3 border-b border-gray-100">
-                        <div className="font-bold text-lg">Nolan PUJOL</div>
-                        <div className="text-xs text-gray-500">nolanpujol34@orange.fr</div>
+                        <div className="font-bold text-lg">{userProfile?.name || "Chargement..."}</div>
+                        <div className="text-xs text-gray-500">{userProfile?.email || ""}</div>
+                        {userProfile?.balance !== undefined && (
+                            <div className="text-sm text-izly-cyan font-semibold mt-1">Solde: {userProfile.balance.toFixed(2)} €</div>
+                        )}
                     </div>
 
-                    <Link to="/profile" className="block px-4 py-3 hover:bg-gray-50 transition-colors flex items-center">
+                    <Link to="/profile" className="block px-4 py-3 hover:bg-gray-50 transition-colors flex items-center" onClick={() => setIsOpen(false)}>
                         <User size={18} className="mr-3 text-gray-400" />
                         Mon profil
+                    </Link>
+
+                    <Link to="/my-izly-identifier" className="block px-4 py-3 hover:bg-gray-50 transition-colors flex items-center" onClick={() => setIsOpen(false)}>
+                        <User size={18} className="mr-3 text-gray-400" />
+                        Mon identifiant Izly
                     </Link>
 
                     <div className="border-t border-gray-100 my-1"></div>
@@ -46,10 +81,13 @@ const UserDropdown = () => {
 
                     <div className="border-t border-gray-100 my-1"></div>
 
-                    <Link to="/login" className="block px-4 py-3 hover:bg-red-50 text-red-600 transition-colors flex items-center">
+                    <button
+                        onClick={handleLogout}
+                        className="w-full block px-4 py-3 hover:bg-red-50 text-red-600 transition-colors flex items-center"
+                    >
                         <LogOut size={18} className="mr-3" />
                         Déconnexion
-                    </Link>
+                    </button>
                 </div>
             )}
         </div>

@@ -1,122 +1,284 @@
-# 🥗 IZLY TRADING - Marketplace de Droits Universitaires
+# 🥗 Izly Trading - Marketplace de Droits Universitaires
 
-> **Le "Uber" du repas Crous.** > Une plateforme d'arbitrage qui permet aux étudiants boursiers de monétiser leurs avantages tarifaires auprès d'étudiants non-boursiers.
+> **Le "Uber" du repas Crous** - Une plateforme d'arbitrage permettant aux étudiants boursiers de monétiser leurs avantages tarifaires.
+
+---
+
+## 📋 Table des Matières
+
+- [Le Concept](#-le-concept)
+- [Installation](#-installation)
+- [Lancement du Projet](#-lancement-du-projet)
+  - [Méthode Automatique](#méthode-1--script-automatique-recommandé)
+  - [Méthode Manuelle](#méthode-2--lancement-manuel)
+- [Architecture Technique](#-architecture-technique)
+- [Documentation API](#-documentation-api)
 
 ---
 
 ## 📖 Le Concept
 
-Izly Trading est une application qui clone l'interface officielle Izly tout en ajoutant une couche de marketplace. Elle connecte deux besoins :
-1.  **Le Vendeur (Boursier)** : Dispose de repas à 1€ (ou 0,30€) qu'il ne consomme pas toujours. Il souhaite récupérer du *vrai* argent (cash) plutôt que d'avoir un solde bloqué sur sa carte étudiante.
-2.  **L'Acheteur (Non-Boursier)** : Paye ses repas 3,30€ et cherche une alternative moins chère.
+Izly Trading clone l'interface officielle Izly tout en ajoutant une couche marketplace connectant :
 
-L'application joue le rôle de tiers de confiance, gère la mise en relation, sécurise la transaction et prend une commission sur l'échange.
+1. **Le Vendeur (Boursier)** : Repas à 1€ qu'il ne consomme pas → récupère du cash
+2. **L'Acheteur (Non-Boursier)** : Paye 3,30€ normalement → achète pour ~1,50€
+3. **L'App** : Tiers de confiance + commission sur l'échange
 
----
+### Aspect Financier
 
-## 👥 Les Acteurs (Personas)
-
-L'application identifie automatiquement le statut de l'utilisateur via un scraping de son profil Crous (Code Tarif).
-
-### 1. KADER (Le Vendeur / Boursier)
-* **Statut :** Boursier (Code Tarif 97).
-* **Coût réel au Crous :** 1,00 €.
-* **Motivation :** Transformer son solde Izly "virtuel" en virement bancaire réel.
-* **Action :** Met son QR Code en location quand il ne mange pas au RU.
-
-### 2. MEHDI (Le Super-Vendeur / Alternant)
-* **Statut :** Précaire / Alternant (Code Tarif 35).
-* **Coût réel au Crous :** 0,30 €.
-* **Motivation :** Maximiser son profit grâce à une marge très élevée.
-
-### 3. ABDEL (L'Acheteur / Non-Boursier)
-* **Statut :** Étudiant classique (Code Tarif 01).
-* **Coût réel au Crous :** 3,30 €.
-* **Motivation :** Manger pour 1,50 € ou 2,00 € (économie significative).
-* **Action :** Paye via l'application pour obtenir un code valide.
+| Type de Vendeur | Coût Crous | Prix Acheteur | Rembours. Vendeur | Bonus | Marge App |
+|:----------------|:-----------|:--------------|:------------------|:------|:----------|
+| Boursier (97)   | 1,00 €     | 1,50 €        | 1,00 €            | +0,20 | **0,30**  |
+| Alternant (35)  | 0,30 €     | 1,50 €        | 0,30 €            | +0,20 | **1,00**  |
 
 ---
 
-## 💰 Aspect Financier & Business Model
+## 🚀 Installation
 
-L'application fonctionne sur un modèle d'**arbitrage**. Le prix d'achat pour Abdel est fixe, mais le coût de revient dépend du vendeur (Kader ou Mehdi). L'application encaisse la différence.
+### Prérequis
 
-### Les Deux Portefeuilles
-Pour comprendre le flux, il faut distinguer deux types d'argent :
-1.  **Le Solde Izly (Réel) :** L'argent stocké chez le Crous. On ne peut pas le toucher. Il diminue quand le vendeur prête son code.
-2.  **Le Wallet App (Virtuel) :** L'argent gagné sur notre plateforme. Il augmente à chaque vente. Le vendeur peut virer cet argent sur son compte bancaire (Payout).
+- **Python 3.11+**
+- **Node.js 18+** et npm
+- **Docker** et Docker Compose
+- **Git**
 
-### Flux de Trésorerie (Exemple pour un repas vendu 1,50 €)
+### Cloner le projet
 
-| Type de Vendeur | Coût Crous (Débité sur Izly) | Prix payé par Abdel | Remboursement Vendeur | Bonus Vendeur | **Marge App (Net)** |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Kader (Boursier)** | 1,00 € | 1,50 € | 1,00 € | + 0,20 € | **0,30 €** |
-| **Mehdi (Alternant)** | 0,30 € | 1,50 € | 0,30 € | + 0,20 € | **1,00 €** |
+```bash
+git clone https://github.com/ELREBEU/IzlyPython.git
+cd IzlyPython
+```
 
-> **Stratégie d'Algorithme :** Lors d'une commande, le backend privilégie toujours les vendeurs à bas coût (Mehdi) pour maximiser la marge de l'application.
+### Configuration Backend
 
----
+```bash
+cd backend
 
-## 🔄 Workflow Transactionnel (Parcours Utilisateur)
+# Créer l'environnement virtuel
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# ou
+venv\Scripts\activate  # Windows
 
-### Étape 1 : Matching & Caution
-* **Kader** active le mode "Vente".
-* **Abdel** commande un repas.
-* 🔒 **Sécurité :** L'application effectue une **empreinte bancaire (Pre-authorization)** de 5,00 € sur la carte d'Abdel via Stripe (ou Apple Pay). Aucun débit n'est effectué, la somme est juste "gelée" pour garantir la solvabilité en cas d'abus.
+# Installer les dépendances
+pip install -r requirements.txt
 
-### Étape 2 : Consommation
-* L'application affiche le QR Code de Kader sur le téléphone d'Abdel.
-* Abdel passe en caisse au Crous.
-* Le compte Izly de Kader est débité (ex: 1,00 €).
+# Configurer les variables d'environnement
+cp .env.example .env
+# Éditer .env avec vos clés Supabase
+```
 
-### Étape 3 : Détection & Régularisation
-Quelques minutes plus tard, le **Backend Python** scanne l'historique de Kader.
+### Configuration Frontend
 
-* **Cas Nominal (Honnête) :**
-    * Le robot voit un débit de 1,00 €.
-    * L'appli capture 1,50 € sur la carte d'Abdel.
-    * La caution est relâchée.
-    * Kader est crédité de 1,20 € sur son Wallet App.
+```bash
+cd frontend-web
+npm install
+```
 
-* **Cas d'Abus (Dépassement) :**
-    * Abdel a pris une canette en plus. Le robot voit un débit de **3,00 €**.
-    * L'appli capture **3,50 €** sur la carte d'Abdel (Coût réel + Frais).
-    * Kader est crédité de 3,20 € sur son Wallet App (Remboursement total + Bonus).
+### Configuration Supabase
 
----
+```bash
+cd backend/supabase
+docker-compose up -d
+```
 
-## 🛠 Architecture Technique
-
-### Frontend (La Vitrine)
-* **Framework :** React 18+ (Vite).
-* **Style :** Tailwind CSS (Clone pixel-perfect du design Izly).
-* **Format :** PWA (Progressive Web App) pour une expérience mobile native.
-
-### Backend (L'Intelligence)
-* **Langage :** Python (FastAPI).
-* **Scraping Engine :** Utilise `requests` et `BeautifulSoup` pour se connecter légitimement aux comptes Izly, récupérer les soldes et surveiller les transactions.
-* **Gestionnaire de Tâches :** Vérifie périodiquement les comptes vendeurs actifs.
-
-### Base de Données
-* **Provider :** Supabase (PostgreSQL).
-* **Données Critiques :**
-    * Tokens de session Izly (chiffrés).
-    * Historique des transactions internes.
-    * Statuts utilisateurs (Table `tariffs`).
-
-### Paiements
-* **Provider :** Stripe.
-* **Mécanismes :**
-    * `SetupIntent` pour enregistrer la carte.
-    * `PaymentIntent` (Capture manuelle) pour le prélèvement post-consommation.
-    * Support natif Apple Pay / Google Pay.
+Accédez à Supabase Studio : http://localhost:54323
 
 ---
 
-## 🛡 Sécurité "Anti-Gruge"
+## 🎯 Lancement du Projet
 
-Pour empêcher un acheteur de vider le compte Izly d'un vendeur :
+### Méthode 1 : Script Automatique (Recommandé)
 
-1.  **Pré-requis Vendeur :** Kader doit avoir un solde Izly suffisant (Buffer de sécurité > 5€) pour proposer son code.
-2.  **Pré-requis Acheteur :** Abdel doit lier un moyen de paiement valide capable de supporter une caution.
-3.  **Régularisation Automatique :** Le système de "Watchdog" vérifie le montant *réel* débité par le Crous et ajuste le prélèvement final sur l'acheteur. **Kader ne perd jamais d'argent.**
+Lance tous les services dans des terminaux séparés :
+
+```bash
+./deploy.sh
+```
+
+**Ce script démarre :**
+- Supabase (Docker Compose)
+- Backend FastAPI (Python)
+- Frontend React (Vite)
+
+### Méthode 2 : Lancement Manuel
+
+#### Terminal 1 : Supabase
+
+```bash
+cd backend/supabase
+docker-compose up
+```
+
+#### Terminal 2 : Backend FastAPI
+
+```bash
+cd backend
+
+# Activer l'environnement virtuel
+source venv/bin/activate  # Linux/Mac
+# ou
+venv\Scripts\activate  # Windows
+
+# Lancer le serveur
+uvicorn app.main:app --reload
+```
+
+**Le backend sera accessible sur :**
+- API : http://localhost:8000
+- Documentation interactive : http://localhost:8000/docs
+
+#### Terminal 3 : Frontend React
+
+```bash
+cd frontend-web
+npm run dev -- --host
+```
+
+**Le frontend sera accessible sur :** http://localhost:5173
+
+---
+
+## 🏗 Architecture Technique
+
+### Stack
+
+- **Frontend** : React 18 + Vite + Tailwind CSS
+- **Backend** : FastAPI (Python) + Scraping Izly
+- **Base de Données** : Supabase (PostgreSQL)
+- **Paiements** : Stripe (à implémenter)
+
+### Structure du Projet
+
+```
+izly-project/
+├── backend/
+│   ├── app/
+│   │   ├── routers/      # Endpoints API
+│   │   │   ├── auth.py   # Login, QR Code, Import Izly
+│   │   │   └── user.py   # Wallet, Transactions, Profile
+│   │   ├── services/
+│   │   │   └── izly_scraper.py  # Scraping Izly officiel
+│   │   ├── models/       # Pydantic models
+│   │   ├── db/           # Supabase client
+│   │   └── main.py       # FastAPI app
+│   ├── supabase/         # Docker Compose Supabase
+│   ├── venv/             # Environnement Python
+│   └── requirements.txt
+├── frontend-web/
+│   ├── src/
+│   │   ├── pages/        # Dashboard, Payment, Profile, etc.
+│   │   ├── components/   # UI réutilisables
+│   │   └── services/
+│   │       └── api.js    # Client API backend
+│   └── public/
+│       └── icons/        # Icônes SVG Izly
+└── deploy.sh             # Script de déploiement auto
+```
+
+---
+
+## 📚 Documentation API
+
+### Authentification
+
+#### `POST /api/auth/import-izly`
+Importe les données Izly (profil, solde, transactions)
+
+**Body :**
+```json
+{
+  "email": "user@example.com",
+  "password": "password",
+  "user_id_supabase": "uuid"
+}
+```
+
+#### `POST /api/auth/qr-code`
+Génère un QR Code de paiement Izly
+
+**Body :**
+```json
+{
+  "email": "user@example.com",
+  "password": "password"
+}
+```
+
+**Response :**
+```json
+{
+  "qr_code_base64": "iVBORw0KGgoAAAANS...",
+  "expiration": "29/12/2025 00:05:00"
+}
+```
+
+### Utilisateur
+
+#### `GET /api/users/wallet/{user_id}`
+Récupère le solde Izly
+
+#### `GET /api/users/transactions/{user_id}`
+Récupère l'historique des transactions
+
+#### `GET /api/users/profile/{user_id}`
+Récupère le profil complet (nom, email, code tarif, etc.)
+
+---
+
+## 🔐 Sécurité
+
+- **Credentials stockés chiffrés** dans Supabase
+- **Sessions Izly** maintenues côté backend
+- **Pré-autorisation bancaire** (Stripe) pour éviter les abus
+- **Watchdog** vérifie les montants réels débités
+
+---
+
+## 🛠 Développement
+
+### Backend
+
+```bash
+cd backend
+source venv/bin/activate
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Frontend
+
+```bash
+cd frontend-web
+npm run dev -- --host
+```
+
+### Supabase Local
+
+```bash
+cd backend/supabase
+docker-compose logs -f  # Voir les logs
+docker-compose down     # Arrêter
+docker-compose up -d    # Redémarrer en arrière-plan
+```
+
+---
+
+## 📝 Licence
+
+Ce projet est un POC éducatif. L'utilisation réelle nécessite l'accord des Crous et d'Izly.
+
+---
+
+## 👥 Contributeurs
+
+- Développé par l'équipe Izly Trading
+- Scraping Izly : Utilise l'API officielle mon-espace.izly.fr
+
+---
+
+## 🆘 Support
+
+Pour toute question :
+- Ouvrir une issue sur GitHub
+- Consulter `/backend/app/routers/` pour les endpoints disponibles
+- Vérifier `http://localhost:8000/docs` pour la doc interactive

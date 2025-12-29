@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 from typing import Optional, Dict, Any
+import base64
 
 class IzlyClient:
     BASE_URL = "https://mon-espace.izly.fr"
@@ -150,7 +151,7 @@ class IzlyClient:
             
         return data
 
-    def get_qr_code(self) -> Optional[bytes]:
+    def get_qr_code(self) -> Optional[Dict[str, Any]]:
         """ Generates a QR Code for payment """
         try:
             url_qrcode = f"{self.BASE_URL}/Home/CreateQrCodeImg"
@@ -165,10 +166,46 @@ class IzlyClient:
 
             if response.status_code == 200:
                 data = response.json()
+                print(f"QR Code API Response: {data}")  # Debug: voir ce que renvoie l'API
+                
                 if "images" in data and len(data["images"]) > 0:
                     base64_img = data["images"][0]
-                    return base64.b64decode(base64_img)
+                    qr_bytes = base64.b64decode(base64_img)
+                    
+                    # Extract validityDate from response
+                    expiration = data.get("validityDate")  # Format: "29/12/2025 00:05:00"
+                    
+                    return {
+                        "qr_image": qr_bytes,
+                        "expiration": expiration
+                    }
             return None
         except Exception as e:
             print(f"QR Code Error: {e}")
+            return None
+
+    def get_my_izly_identifier_qr(self) -> Optional[Dict[str, Any]]:
+        """ Generates a QR Code representing the user's Izly identifier """
+        try:
+            url_qrcode = f"{self.BASE_URL}/Home/CreateQrCodeImgMyIzlyIdentifier"
+            headers_qr = {
+                "X-Requested-With": "XMLHttpRequest",
+                "Referer": f"{self.BASE_URL}/Home/GenerateQRCodeMyIzlyIdentifier",
+                "Origin": self.BASE_URL
+            }
+
+            response = self.session.post(url_qrcode, data={}, headers=headers_qr)
+
+            if response.status_code == 200:
+                data = response.text  # Returns base64 directly as string
+                print(f"My Izly Identifier QR Response length: {len(data)}")
+                
+                if data:
+                    qr_bytes = base64.b64decode(data)
+                    return {
+                        "qr_image": qr_bytes
+                    }
+            return None
+        except Exception as e:
+            print(f"My Izly Identifier QR Error: {e}")
             return None

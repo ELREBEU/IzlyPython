@@ -31,12 +31,29 @@ def get_my_wallet(user_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/transactions/{user_id}")
-def get_user_transactions(user_id: str):
+def get_transactions(user_id: str):
     """
-    Get user transaction history
+    Retrieves transaction history for a user from Supabase
     """
     try:
-        res = supabase.table("transactions").select("*").eq("user_id", user_id).order("izly_date", desc=True).execute()
-        return res.data
+        response = supabase.table("transactions").select("*").eq("user_id", user_id).order("izly_date", desc=True).execute()
+        return response.data
     except Exception as e:
+        print(f"Error fetching transactions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/profile/{user_id}")
+def get_profile(user_id: str):
+    """
+    Retrieves full user profile from Supabase
+    """
+    try:
+        response = supabase.table("profiles").select("*").eq("id", user_id).execute()
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        return response.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching profile: {e}")
         raise HTTPException(status_code=500, detail=str(e))

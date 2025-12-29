@@ -24,6 +24,7 @@ const Layout = ({ children }) => {
         { to: "/dashboard", icon: Home, label: "Accueil" },
         { to: "/payment", icon: CreditCard, label: "Payer" },
         { to: "/recharge", icon: PlusCircle, label: "Recharger" },
+        { to: "/plus", icon: Menu, label: "Plus" },
     ];
 
     return (
@@ -109,10 +110,10 @@ const Layout = ({ children }) => {
                     </div>
                     <span className="text-[10px] mt-1 font-medium">Actus</span>
                 </div>
-                <div className="flex flex-col items-center justify-center w-full h-full text-white opacity-50">
+                <Link to="/plus" className={clsx("flex flex-col items-center justify-center w-full h-full", location.pathname === "/plus" ? "text-izly-cyan" : "text-white")}>
                     <PlusCircle size={24} strokeWidth={1.5} className="rotate-45" />
                     <span className="text-[10px] mt-1 font-medium">Plus</span>
-                </div>
+                </Link>
             </nav>
         </div>
     );

@@ -22,6 +22,7 @@ class ProfileBase(BaseModel):
     tariff_code: Optional[str] = None
     izly_balance: Optional[float] = 0.0
     app_wallet_balance: Optional[float] = 0.0
+    izly_identifier_qr_base64: Optional[str] = None
 
 class ProfileUpdate(ProfileBase):
     pass

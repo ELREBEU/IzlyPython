@@ -60,8 +60,8 @@ const Dashboard = () => {
                     {/* MOBILE HEADER: Logo & User Icon */}
                     <div className="md:hidden w-full flex justify-between items-center px-4 mb-0 relative z-30 py-1">
                         <img src="/logo_blanc.svg" alt="Izly" className="w-16 h-auto" />
-                        <div className="bg-white rounded-lg p-2.5 shadow-md">
-                            <User size={24} className="text-izly-blue-main" />
+                        <div className="relative z-50">
+                            <UserDropdown />
                         </div>
                     </div>
 
@@ -185,7 +185,7 @@ const Dashboard = () => {
                                                     <div className="relative">
                                                         <div className="w-10 h-10 rounded-full border border-izly-cyan flex items-center justify-center text-izly-cyan bg-white">
                                                             {tx.type === 'RECHARGE' && <span className="text-xl font-bold">€</span>}
-                                                            {tx.type === 'PAYMENT' && <span className="text-xl font-bold">-</span>}
+                                                            {tx.type === 'PAYMENT' && <img src="/icons/payer-icon.svg" alt="Payer" className="w-6 h-6" />}
                                                             {tx.type === 'TRANSFER' && <span className="text-xl font-bold">🏦</span>}
                                                         </div>
                                                         {/* Small plus icon for recharge */}
