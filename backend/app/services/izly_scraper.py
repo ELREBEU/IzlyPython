@@ -47,42 +47,125 @@ class IzlyClient:
             return False
 
     def get_profile_data(self) -> Optional[Dict[str, Any]]:
-        """ Scrapes /Profile for personal info and TARIFF CODE """
+        """ Scrapes /Profile for ALL personal info using robust selectors """
         try:
             res = self.session.get(f"{self.BASE_URL}/Profile")
-            if res.status_code != 200: return None
+            if res.status_code != 200: 
+                print(f"Profile page returned status {res.status_code}")
+                return None
             
             soup = BeautifulSoup(res.text, 'html.parser')
             data = {}
 
-            # Extract Name (H1 in Header)
+            # 1. Header Info (Name, Email/Identifier, DOB)
             header_div = soup.find('div', class_='header')
             if header_div:
-                data['full_name'] = header_div.find('h1').text.strip()
+                # Name
+                h1 = header_div.find('h1')
+                if h1:
+                    data['full_name'] = h1.text.strip()
+                    print(f"✓ Nom: {data['full_name']}")
+                
+                # Definition List for other header info
+                dl = header_div.find('dl')
+                if dl:
+                    dts = dl.find_all('dt')
+                    dds = dl.find_all('dd')
+                    # Iterate through pairs
+                    for dt, dd in zip(dts, dds):
+                        label = dt.text.strip().upper()
+                        value = dd.text.strip()
+                        
+                        if "IDENTIFIANT" in label:
+                            data['email'] = value # Primary identifier is often the email
+                            print(f"✓ Email (Identifiant): {data['email']}")
+                        elif "DATE DE NAISSANCE" in label:
+                            data['birth_date'] = value
+                            print(f"✓ Date de naissance: {data['birth_date']}")
 
-            # Extract Tariff Code (Crucial for Business Model)
-            # Looks for div with class 'rectangle' following 'Code tarif'
+            # 2. Address (from strong tags in rectangle)
+            # Look for the rectangle containing the address
+            # Strategy: Find form-line with "Adresse postale", then find the rectangle inside
             form_lines = soup.find_all('div', class_='form-line')
+            
             for line in form_lines:
-                if "Code tarif" in line.text:
-                    rectangle = line.find('div', class_='rectangle')
-                    if rectangle:
-                        data['tariff_code'] = rectangle.text.strip()
-                if "identifiant" in line.text.lower(): # Izly ID
-                     user_id_input = soup.find('input', {'id': 'UserId'})
-                     if user_id_input:
-                        data['izly_user_id'] = user_id_input['value']
+                text_content = line.get_text().strip()
+                
+                # Address
+                if "Adresse postale" in text_content and not "e-mail" in text_content:
+                    rect = line.find('div', class_='rectangle')
+                    if rect:
+                        # Try specific classes first (as seen in user HTML)
+                        street_elem = rect.find('strong', class_='addWay')
+                        zip_elem = rect.find('strong', class_='addZipCode')
+                        city_elem = rect.find('strong', class_='addCity')
+                        
+                        if street_elem: data['address_street'] = street_elem.text.strip()
+                        if zip_elem: data['address_zip'] = zip_elem.text.strip()
+                        if city_elem: data['address_city'] = city_elem.text.strip()
+                        
+                        # Fallback: Parse text if classes missing
+                        if not data.get('address_city'):
+                            full_text = rect.get_text(" ", strip=True)
+                            # Simple heuristic if needed, but classes should work
+                            print(f"⚠ Address fallback parsing for: {full_text}")
+                            
+                        print(f"✓ Adresse: {data.get('address_street')} {data.get('address_zip')} {data.get('address_city')}")
 
-            # Extract Address
-            addr_div = soup.find('div', class_='rectangle') # Often the first one
-            if addr_div and addr_div.find('strong', class_='addZipCode'):
-                 data['address_zip'] = addr_div.find('strong', class_='addZipCode').text.strip()
-                 data['address_city'] = addr_div.find('strong', class_='addCity').text.strip()
+                # Secondary Email
+                if "Adresse e-mail secondaire" in text_content:
+                    rect = line.find('div', class_='rectangle')
+                    if rect:
+                        email_sec = rect.text.strip()
+                        if '@' in email_sec:
+                            data['email_secondary'] = email_sec
+                            print(f"✓ Email secondaire: {data['email_secondary']}")
 
+                # Phone
+                if "Téléphone portable" in text_content:
+                    rect = line.find('div', class_='rectangle')
+                    if rect:
+                        phone = rect.text.strip()
+                        # Clean up phone number
+                        data['phone'] = phone
+                        print(f"✓ Téléphone: {data['phone']}")
+
+                # Company Code
+                if "Code société" in text_content:
+                    rect = line.find('div', class_='rectangle')
+                    if rect:
+                        data['company_code'] = rect.text.strip()
+                        print(f"✓ Code société: {data['company_code']}")
+
+                # Tariff Code
+                if "Code tarif" in text_content:
+                    rect = line.find('div', class_='rectangle')
+                    if rect:
+                        data['tariff_code'] = rect.text.strip()
+                        print(f"✓ Code tarif: {data['tariff_code']}")
+                
+                # End Date
+                if "Date de fin de droits" in text_content:
+                    rect = line.find('div', class_='rectangle')
+                    if rect:
+                        data['end_date'] = rect.text.strip()
+                        print(f"✓ Date fin droits: {data['end_date']}")
+
+            # Extract Izly User ID (hidden input)
+            user_id_input = soup.find('input', {'id': 'UserId'})
+            if user_id_input and user_id_input.get('value'):
+                data['izly_user_id'] = user_id_input.get('value')
+                print(f"✓ Izly User ID: {data['izly_user_id']}")
+
+            print(f"\n📋 Total fields extracted: {len(data)}")
             return data
+            
         except Exception as e:
-            print(f"Profile Error: {e}")
+            print(f"❌ Profile scraping error: {e}")
+            import traceback
+            traceback.print_exc()
             return None
+
 
     def get_balance_and_history(self) -> Dict[str, Any]:
         """ Scrapes Dashboard for Balance + AJAX Calls for History """

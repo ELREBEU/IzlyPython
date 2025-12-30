@@ -2,12 +2,6 @@ import axios from 'axios';
 
 const API_URL = 'http://127.0.0.1:8000/api';
 
-// Helper to simulate delay if needed, but we are real now
-// const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// We need to store credentials temporarily for the session (since we re-login for QR code)
-// In a real production app, we would use a proper session/token flow.
-// For this MVP, we will store them in memory or localStorage.
 // Load credentials from localStorage if available
 const savedCredentials = JSON.parse(localStorage.getItem('izly_credentials') || '{}');
 
@@ -16,44 +10,54 @@ console.log("📦 Loaded from localStorage:", savedCredentials);
 let currentCredentials = {
     email: savedCredentials.email || '',
     password: savedCredentials.password || '',
-    userId: savedCredentials.userId || '69722997-dcb6-4628-881c-0747f139ddeb'
+    userId: savedCredentials.userId || ''
 };
 
 console.log("🔑 Current credentials state:", {
     email: currentCredentials.email || 'EMPTY',
     password: currentCredentials.password ? '***' : 'EMPTY',
-    userId: currentCredentials.userId
+    userId: currentCredentials.userId || 'EMPTY'
 });
 
 export const api = {
     auth: {
         login: async (email, password) => {
             try {
-                // Store credentials for future calls
+                console.log(`🔑 Login attempt for email: ${email}`);
+
+                // Le backend génère automatiquement l'UUID basé sur l'email
+                const response = await axios.post(`${API_URL}/auth/import-izly`, {
+                    email,
+                    password
+                    // user_id_supabase: ❌ NON ENVOYÉ - auto-généré par le backend !
+                });
+
+                console.log('✅ Backend response:', response.data);
+
+                // Store credentials + user_id returned from backend
+                const userId = response.data.user_id;
                 currentCredentials.email = email;
                 currentCredentials.password = password;
+                currentCredentials.userId = userId;
 
                 // Persist to localStorage
                 localStorage.setItem('izly_credentials', JSON.stringify(currentCredentials));
 
-                const response = await axios.post(`${API_URL}/auth/import-izly`, {
-                    email,
-                    password,
-                    user_id_supabase: currentCredentials.userId
-                });
+                console.log(`✅ Logged in successfully with user_id: ${userId}`);
 
                 return {
                     user: response.data.profile,
                     token: "session-active"
                 };
             } catch (error) {
-                console.error("Login error:", error);
+                console.error("❌ Login error:", error.response?.data || error.message);
                 throw new Error(error.response?.data?.detail || "Erreur de connexion");
             }
         },
         logout: () => {
-            currentCredentials = { email: '', password: '', userId: '69722997-dcb6-4628-881c-0747f139ddeb' };
+            currentCredentials = { email: '', password: '', userId: '' };
             localStorage.removeItem('izly_credentials');
+            console.log('🚪 Logged out');
         },
         getMyIzlyIdentifierQR: async () => {
             try {
@@ -74,6 +78,10 @@ export const api = {
     wallet: {
         getBalance: async () => {
             try {
+                if (!currentCredentials.userId) {
+                    console.warn('No userId, returning 0 balance');
+                    return { balance: 0.0 };
+                }
                 const response = await axios.get(`${API_URL}/users/wallet/${currentCredentials.userId}`);
                 return { balance: response.data.izly_balance };
             } catch (error) {
@@ -89,6 +97,10 @@ export const api = {
     transactions: {
         getHistory: async () => {
             try {
+                if (!currentCredentials.userId) {
+                    console.warn('No userId, returning empty transactions');
+                    return [];
+                }
                 const response = await axios.get(`${API_URL}/users/transactions/${currentCredentials.userId}`);
                 return response.data.map(tx => ({
                     id: tx.id,
@@ -106,11 +118,32 @@ export const api = {
     profile: {
         getProfile: async () => {
             try {
+                if (!currentCredentials.userId) {
+                    console.warn('No userId, cannot get profile');
+                    return null;
+                }
                 const response = await axios.get(`${API_URL}/users/profile/${currentCredentials.userId}`);
                 return response.data;
             } catch (error) {
                 console.error("Get profile error:", error);
                 return null;
+            }
+        },
+        syncWithIzly: async () => {
+            try {
+                if (!currentCredentials.email || !currentCredentials.password) {
+                    throw new Error("Identifiants manquants pour la synchronisation");
+                }
+                console.log("🔄 Starting background sync with Izly...");
+                const response = await axios.post(`${API_URL}/auth/import-izly`, {
+                    email: currentCredentials.email,
+                    password: currentCredentials.password
+                });
+                console.log("✅ Sync successful:", response.data);
+                return response.data.profile;
+            } catch (error) {
+                console.error("Sync error:", error);
+                throw error;
             }
         }
     },
@@ -122,10 +155,7 @@ export const api = {
                     throw new Error("Credentials missing. Please login again.");
                 }
 
-                console.log("🔍 DEBUG: Sending QR code request with:", {
-                    email: currentCredentials.email,
-                    password: currentCredentials.password ? '***' : 'EMPTY'
-                });
+                console.log("🔍 Sending QR code request...");
 
                 const response = await axios.post(`${API_URL}/auth/qr-code`, {
                     email: currentCredentials.email,
@@ -137,6 +167,50 @@ export const api = {
                 console.error("❌ QR Code error:", error);
                 console.error("Error response:", error.response?.data);
                 throw error;
+            }
+        }
+    },
+    trade: {
+        getChat: async (sessionId) => {
+            try {
+                const response = await axios.get(`${API_URL}/trade/chat/${sessionId}`);
+                return response.data;
+            } catch (error) {
+                console.error("Get chat error:", error);
+                return [];
+            }
+        },
+        regenerateQR: async (sessionId) => {
+            try {
+                if (!currentCredentials.userId) throw new Error("User ID missing");
+
+                const response = await axios.post(`${API_URL}/trade/regenerate/${sessionId}`, {
+                    buyer_id: currentCredentials.userId
+                });
+                return response.data;
+            } catch (error) {
+                console.error("Regenerate QR error:", error);
+                throw error;
+            }
+        },
+        getHistory: async (userId) => {
+            try {
+                const response = await axios.get(`${API_URL}/trade/history/${userId}`);
+                return response.data;
+            } catch (error) {
+                console.error("Get trade history error:", error);
+                return [];
+            }
+        }
+    },
+    market: {
+        listOffers: async () => {
+            try {
+                const response = await axios.get(`${API_URL}/market/offers`);
+                return response.data;
+            } catch (error) {
+                console.error("List offers error:", error);
+                return [];
             }
         }
     }

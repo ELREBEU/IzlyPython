@@ -58,26 +58,36 @@ The API will be available at:
 
 ## 🧪 Testing
 
-### Test Scraper (Standalone)
-To test the scraping logic without the API:
-```bash
-python test_scraper.py
-```
+## 🔌 API Endpoints
 
-### Test API
-Use the Swagger UI (`/docs`) to test the `POST /api/auth/import-izly` endpoint with your Izly credentials.
+### Authentication
+- `POST /api/auth/import-izly`: Login and scrape user data (Profile, Balance, History).
+
+### Market (Seller)
+- `POST /api/market/share-my-code`: Create a market offer.
+  - Verifies seller balance and tariff eligibility (Boursier/Alternant).
+  - **No expiration**: Offer remains open until booked.
+- `GET /api/market/offers`: List all available offers (Status: OPEN).
+
+### Trade (Buyer)
+- `POST /api/trade/book/{offer_id}`: Book an offer.
+  - Verifies buyer balance (App Wallet).
+  - Verifies seller balance (Izly Scraper).
+  - Generates a **fresh QR Code** (valid 15 min) and sends it to the buyer.
+- `POST /api/trade/regenerate/{session_id}`: Regenerate an expired QR Code.
+  - Re-verifies seller balance.
+  - Generates a new QR Code if the previous one expired.
 
 ## 📂 Project Structure
 
 ```
 backend/
 ├── app/
-│   ├── core/           # Configuration (Env vars)
+│   ├── core/           # Configuration (Env vars, Security)
 │   ├── db/             # Database connection (Supabase)
 │   ├── models/         # Pydantic Models
-│   ├── routers/        # API Endpoints
-│   ├── services/       # Business Logic (Scraper)
+│   ├── routers/        # API Endpoints (Auth, Market, Trade)
+│   ├── services/       # Business Logic (Scraper, Bot)
 │   └── main.py         # App Entry Point
-├── requirements.txt    # Python Dependencies
-└── test_scraper.py     # Standalone Test Script
+└── requirements.txt    # Python Dependencies
 ```

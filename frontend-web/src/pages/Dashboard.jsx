@@ -66,7 +66,7 @@ const Dashboard = () => {
                     </div>
 
                     {/* DESKTOP ONLY: User Dropdown */}
-                    <div className="hidden md:block absolute top-12 right-8 z-10">
+                    <div className="hidden md:block absolute top-12 right-8 z-50">
                         <UserDropdown />
                     </div>
 

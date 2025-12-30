@@ -30,13 +30,13 @@ CREATE TABLE public.tariffs (
 -- Données initiales
 INSERT INTO public.tariffs (code, label, izly_cost, payout_amount) VALUES
 ('98', 'Boursier (Taux Max)', 1.00, 1.20),
-('35', 'Alternant/Précaire', 0.30, 0.50),
+('100', 'Alternant/Précaire', 0.30, 0.50),
 ('97', 'Non Boursier/Standard', 3.30, 0.00);
 
 -- 2. PROFILS (Utilisateurs)
 CREATE TABLE public.profiles (
-  id uuid references auth.users not null primary key,
-  email text unique,
+  id uuid primary key default uuid_generate_v4(),
+  email text unique not null,
   full_name text,
   
   -- Sécurité Izly (champs chiffrés)
@@ -81,16 +81,13 @@ CREATE TABLE public.market_offers (
   -- Contraintes
   min_balance_required decimal(10, 2) default 3.30,
   
-  -- Localisation
-  lat float,
-  lng float,
-  radius_meters int default 500,
+  -- Contraintes
+  min_balance_required decimal(10, 2) default 3.30,
   
   -- Statut: OPEN, LOCKED, COMPLETED, CANCELLED
   status text default 'OPEN',
   
-  created_at timestamp default now(),
-  expires_at timestamp
+  created_at timestamp default now()
 );
 
 -- 5. SESSIONS DE TRADE (Transactions marketplace)
@@ -106,6 +103,9 @@ CREATE TABLE public.trade_sessions (
   -- Statut: CREATED, QR_SENT, CHECKING, FINALIZED, DISPUTE
   status text default 'CREATED',
   
+  -- QR Code généré pour l'acheteur
+  qr_code_token text,
+
   created_at timestamp default now(),
   finalized_at timestamp
 );
@@ -116,6 +116,7 @@ CREATE TABLE public.chat_messages (
   session_id uuid references public.trade_sessions(id) ON DELETE CASCADE,
   sender text default 'SYSTEM', -- 'SYSTEM', 'BUYER', 'SELLER'
   content text,
+  icon_type text default 'INFO',
   is_read boolean default false,
   created_at timestamp default now()
 );
@@ -128,7 +129,8 @@ CREATE TABLE public.transactions (
   amount decimal(10, 2),
   label text,
   izly_date timestamp,
-  created_at timestamp default now()
+  created_at timestamp default now(),
+  unique(user_id, izly_date, amount, type)
 );
 
 -- ============================================

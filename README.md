@@ -26,10 +26,33 @@ Izly Trading clone l'interface officielle Izly tout en ajoutant une couche marke
 
 ### Aspect Financier
 
-| Type de Vendeur | Coût Crous | Prix Acheteur | Rembours. Vendeur | Bonus | Marge App |
-|:----------------|:-----------|:--------------|:------------------|:------|:----------|
-| Boursier (97)   | 1,00 €     | 1,50 €        | 1,00 €            | +0,20 | **0,30**  |
-| Alternant (35)  | 0,30 €     | 1,50 €        | 0,30 €            | +0,20 | **1,00**  |
+**Comment ça marche** : Le vendeur paie son repas au Crous (selon son tarif), puis est **remboursé** par l'acheteur via l'app + reçoit un bonus de 0.20€.
+
+| Type de Vendeur | Code Tarif | Coût Crous | Prix Acheteur | Remboursement Vendeur | Bonus | Profit Vendeur | Marge App |
+|:----------------|:-----------|:-----------|:--------------|:----------------------|:------|:---------------|:----------|
+| Boursier        | **98**     | 1,00 €     | 1,50 €        | 1,00 €                | +0,20 | **+0,20 €**    | **0,30 €**|
+| Alternant       | **100**    | 0,30 €     | 1,50 €        | 0,30 €                | +0,20 | **+0,20 €**    | **1,00 €**|
+| Non-Boursier    | **97**     | 3,30 €     | Direct        | 0,00 €                | 0,00  | **0,00 €**     | **0,00 €**|
+
+**Note** : Les non-boursiers peuvent vendre (rare) mais sans profit - c'est un échange de faveur direct.
+
+### 💰 Système à Double Monnaie (Important)
+
+L'application gère deux types de soldes distincts :
+
+1.  **Côté Vendeur (Réel)** :
+    *   Utilise le **VRAI solde Izly**.
+    *   Lors d'une vente, l'application se connecte en temps réel au compte Izly du vendeur pour vérifier les fonds et générer le QR code.
+    *   *Sécurité* : Les identifiants sont chiffrés en base.
+
+2.  **Côté Acheteur (Virtuel)** :
+    *   Utilise un **Porte-monnaie Interne** à l'application (Wallet App).
+    *   L'acheteur ne paie PAS avec son compte Izly (sinon il paierait plein tarif).
+    *   Il doit recharger ce wallet (via CB dans la version finale).
+
+> [!TIP]
+> **Pour tester en local** : Comme Stripe n'est pas activé, vous devez créditer manuellement le wallet de l'acheteur via la base de données ou le script `backend/credit_wallet.py`.
+
 
 ---
 
@@ -183,16 +206,17 @@ izly-project/
 ### Authentification
 
 #### `POST /api/auth/import-izly`
-Importe les données Izly (profil, solde, transactions)
+Importe les données Izly (profil, solde, transactions) et **chiffre les credentials** pour usage futur
 
 **Body :**
 ```json
 {
   "email": "user@example.com",
-  "password": "password",
-  "user_id_supabase": "uuid"
+  "password": "password"
 }
 ```
+
+**Note** : L'UUID est auto-généré via l'email. Les credentials sont chiffrés avec Fernet pour générer les QR codes automatiquement.
 
 #### `POST /api/auth/qr-code`
 Génère un QR Code de paiement Izly
@@ -224,7 +248,32 @@ Récupère l'historique des transactions
 #### `GET /api/users/profile/{user_id}`
 Récupère le profil complet (nom, email, code tarif, etc.)
 
+### Marketplace (Trade)
+
+#### `GET /api/market/offers`
+Liste les offres de repas disponibles (vendeurs actifs).
+
+#### `GET /api/trade/history/{user_id}`
+Récupère l'historique des transactions de trading.
+
+#### `GET /api/trade/chat/{session_id}`
+Récupère les messages et le statut d'une session de trade en cours.
+
 ---
+
+## 📱 Fonctionnalités Clés
+
+### 1. Clone Izly (Face Visible)
+- Interface identique à l'application officielle.
+- Consultation du solde et de l'historique réel.
+- Génération de QR Code de paiement.
+
+### 2. Izly Trading (Face Cachée)
+- **Dashboard "Uber-style"** : Interface moderne et fluide.
+- **Mode Acheteur (Manger)** : Carte interactive des vendeurs à proximité.
+- **Mode Vendeur (Vendre)** : Mise en vente de repas et génération de revenus.
+- **Chat en Temps Réel** : Communication sécurisée entre acheteur et vendeur.
+- **QR Code Holographique** : Preuve de transaction unique.
 
 ## 🔐 Sécurité
 
