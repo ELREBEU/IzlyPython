@@ -28,11 +28,11 @@ Izly Trading clone l'interface officielle Izly tout en ajoutant une couche marke
 
 **Comment ça marche** : Le vendeur paie son repas au Crous (selon son tarif), puis est **remboursé** par l'acheteur via l'app + reçoit un bonus de 0.20€.
 
-| Type de Vendeur | Code Tarif | Coût Crous | Prix Acheteur | Remboursement Vendeur | Bonus | Profit Vendeur | Marge App |
-|:----------------|:-----------|:-----------|:--------------|:----------------------|:------|:---------------|:----------|
-| Boursier        | **98**     | 1,00 €     | 1,50 €        | 1,00 €                | +0,20 | **+0,20 €**    | **0,30 €**|
-| Alternant       | **100**    | 0,30 €     | 1,50 €        | 0,30 €                | +0,20 | **+0,20 €**    | **1,00 €**|
-| Non-Boursier    | **97**     | 3,30 €     | Direct        | 0,00 €                | 0,00  | **0,00 €**     | **0,00 €**|
+| Type de Vendeur | Code Tarif | Coût Crous (Débité) | Prix Acheteur (Payé à l'App) | Remboursement Vendeur | Profit Vendeur | Total Reçu Vendeur | Commission App |
+|:----------------|:-----------|:--------------------|:-----------------------------|:----------------------|:---------------|:-------------------|:---------------|
+| Boursier        | **98**     | 1,00 €              | **1,50 €**                   | 1,00 €                | +0,20 €        | **1,20 €**         | **0,30 €**     |
+| Alternant       | **100**    | 0,30 €              | **1,00 €**                   | 0,30 €                | +0,20 €        | **0,50 €**         | **0,50 €**     |
+| Non-Boursier    | **97**     | 3,30 €              | **3,30 €**                   | 3,30 €                | 0,00 €         | **3,30 €**         | **0,00 €**     |
 
 **Note** : Les non-boursiers peuvent vendre (rare) mais sans profit - c'est un échange de faveur direct.
 

@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import MyIzlyIdentifier from './pages/MyIzlyIdentifier';
 import Plus from './pages/Plus';
 import TradeLayout from './features/trade/TradeLayout';
+import TradePayment from './pages/TradePayment';
 
 function App() {
     return (
@@ -24,6 +25,7 @@ function App() {
                 <Route path="/my-izly-identifier" element={<MyIzlyIdentifier />} />
                 <Route path="/plus" element={<Plus />} />
                 <Route path="/trade" element={<TradeLayout />} />
+                <Route path="/trade/payment" element={<TradePayment />} />
             </Routes>
         </Router>
     );

@@ -171,6 +171,22 @@ export const api = {
         }
     },
     trade: {
+        bookOffer: async (offerId, password) => {
+            try {
+                if (!currentCredentials.userId) throw new Error("User ID missing");
+
+                // We need to send the password again for security verification in book_trade
+                const response = await axios.post(`${API_URL}/trade/book/${offerId}`, {
+                    buyer_id: currentCredentials.userId,
+                    email: currentCredentials.email,
+                    password: password || currentCredentials.password // Use passed password or stored one
+                });
+                return response.data;
+            } catch (error) {
+                console.error("Book offer error:", error);
+                throw error;
+            }
+        },
         getChat: async (sessionId) => {
             try {
                 const response = await axios.get(`${API_URL}/trade/chat/${sessionId}`);
@@ -211,6 +227,20 @@ export const api = {
             } catch (error) {
                 console.error("List offers error:", error);
                 return [];
+            }
+        },
+        shareCode: async (password) => {
+            try {
+                if (!currentCredentials.email) throw new Error("Email missing");
+
+                const response = await axios.post(`${API_URL}/market/share-my-code`, {
+                    izly_login: currentCredentials.email,
+                    izly_password: password || currentCredentials.password
+                });
+                return response.data;
+            } catch (error) {
+                console.error("Share code error:", error);
+                throw error;
             }
         }
     }

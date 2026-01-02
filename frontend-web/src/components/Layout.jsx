@@ -16,7 +16,7 @@ const SidebarItem = ({ to, icon: Icon, label, active }) => (
     </Link>
 );
 
-const Layout = ({ children }) => {
+const Layout = ({ children, fullWidth = false }) => {
     const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -56,8 +56,6 @@ const Layout = ({ children }) => {
                 </div>
             </aside>
 
-
-
             {/* Mobile Navigation Overlay */}
             {isMobileMenuOpen && (
                 <div className="md:hidden fixed inset-0 bg-izly-black z-20 pt-20 px-4">
@@ -81,14 +79,14 @@ const Layout = ({ children }) => {
             )}
 
             {/* Main Content */}
-            <main className="flex-1 md:ml-24 pt-0 p-0 md:p-8 overflow-y-auto">
+            <main className={clsx(
+                "flex-1 md:ml-24 pt-0 overflow-y-auto",
+                fullWidth ? "p-0" : "p-0 md:p-8"
+            )}>
                 {children}
             </main>
 
-            {/* Mobile Bottom Tab Bar (Optional, mimicking native app feel if desired, but Sidebar is requested) */}
-            {/* For now, we stick to the requested Sidebar for Desktop and a simple mobile menu or bottom bar. 
-           The user mentioned "TabBar fixe en bas" for mobile. Let's implement that instead of the overlay menu for better accuracy.
-       */}
+            {/* Mobile Bottom Tab Bar */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-izly-black h-16 flex items-center justify-around z-30 border-t border-gray-800 pb-safe">
                 <Link to="/dashboard" className={clsx("flex flex-col items-center justify-center w-full h-full", location.pathname === "/dashboard" ? "text-izly-cyan" : "text-white")}>
                     <Home size={24} strokeWidth={1.5} />

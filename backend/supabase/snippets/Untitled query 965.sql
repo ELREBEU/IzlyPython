@@ -156,4 +156,4 @@ CREATE INDEX idx_transactions_user ON public.transactions(user_id);
 -- - chat_messages (bot logs)
 -- - transactions (historique Izly)
 -- - connection_logs (logs de connexion)
-```
+

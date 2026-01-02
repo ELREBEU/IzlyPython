@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request
 from pydantic import BaseModel
 from app.services.izly_scraper import IzlyClient
 from app.db.supabase import supabase
@@ -19,7 +19,7 @@ class ImportRequest(BaseModel):
     password: str
 
 @router.post("/import-izly", status_code=status.HTTP_200_OK)
-def import_izly_data(request: ImportRequest):
+def import_izly_data(import_request: ImportRequest, request: Request):
     """
     **Importation des données Izly (Connexion & Scraping)**
 
@@ -32,21 +32,21 @@ def import_izly_data(request: ImportRequest):
     """
     # 1. Determine user_id via email lookup (auto-create if doesn't exist)
     try:
-        existing_profile = supabase.table("profiles").select("id").eq("email", request.email).execute()
+        existing_profile = supabase.table("profiles").select("id").eq("email", import_request.email).execute()
         
         if existing_profile.data and len(existing_profile.data) > 0:
             # User exists, use their ID
             user_id = existing_profile.data[0]["id"]
-            print(f"✓ Found existing user with email {request.email}: {user_id}")
+            print(f"✓ Found existing user with email {import_request.email}: {user_id}")
         else:
             # New user - generate deterministic UUID based on email
             import uuid
             import hashlib
             
             # Create deterministic UUID from email (same email = same UUID)
-            email_hash = hashlib.md5(request.email.lower().encode()).hexdigest()
+            email_hash = hashlib.md5(import_request.email.lower().encode()).hexdigest()
             user_id = str(uuid.UUID(email_hash))
-            print(f"✓ Generated new UUID for {request.email}: {user_id}")
+            print(f"✓ Generated new UUID for {import_request.email}: {user_id}")
             
     except Exception as e:
         # Fallback: generate random UUID
@@ -59,7 +59,7 @@ def import_izly_data(request: ImportRequest):
     client = IzlyClient()
     
     # 3. Login to Izly
-    if not client.login(request.email, request.password):
+    if not client.login(import_request.email, import_request.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Izly credentials"
@@ -90,7 +90,7 @@ def import_izly_data(request: ImportRequest):
     # 7. Upsert Profile to Supabase (with encrypted credentials)
     profile_payload = {
         "id": user_id,
-        "email": request.email,
+        "email": import_request.email,
         "full_name": profile_data.get("full_name"),
         "birth_date": profile_data.get("birth_date"),
         "phone": profile_data.get("phone"),
@@ -102,8 +102,8 @@ def import_izly_data(request: ImportRequest):
         "izly_user_id": profile_data.get("izly_user_id"),
         "izly_identifier_qr_base64": izly_qr_base64,
         # Encrypt credentials for later QR code generation
-        "izly_login_encrypted": security.encrypt(request.email),
-        "izly_password_encrypted": security.encrypt(request.password)
+        "izly_login_encrypted": security.encrypt(import_request.email),
+        "izly_password_encrypted": security.encrypt(import_request.password)
     }
     
     supabase.table("profiles").upsert(profile_payload).execute()
@@ -132,6 +132,18 @@ def import_izly_data(request: ImportRequest):
             print(f"Error inserting transaction: {e}")
             # Continue to next transaction even if one fails
             continue
+            
+    # 9. Log Connection (LOGIN)
+    try:
+        client_ip = request.client.host
+        supabase.table("connection_logs").insert({
+            "user_id": user_id,
+            "ip_address": client_ip,
+            "event_type": "LOGIN"
+        }).execute()
+        print(f"✓ Logged connection for {user_id} from {client_ip}")
+    except Exception as e:
+        print(f"⚠ Error logging connection: {e}")
     
     return {
         "message": "Izly data imported successfully",
@@ -139,6 +151,27 @@ def import_izly_data(request: ImportRequest):
         "profile": profile_payload,
         "transactions_count": len(balance_hist["transactions"])
     }
+
+class LogoutRequest(BaseModel):
+    user_id: str
+
+@router.post("/logout")
+def logout_user(logout_req: LogoutRequest, request: Request):
+    """
+    **Déconnexion**
+    Log l'événement de déconnexion.
+    """
+    try:
+        client_ip = request.client.host
+        supabase.table("connection_logs").insert({
+            "user_id": logout_req.user_id,
+            "ip_address": client_ip,
+            "event_type": "LOGOUT"
+        }).execute()
+        return {"message": "Logged out successfully"}
+    except Exception as e:
+        print(f"Error logging logout: {e}")
+        return {"message": "Logged out (log failed)"}
 
 @router.post("/qr-code", status_code=status.HTTP_200_OK)
 def get_qr_code(request: QRCodeRequest):

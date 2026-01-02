@@ -11,9 +11,9 @@ router = APIRouter()
 
 # Tariff configuration (matching README)
 TARIFF_CONFIG = {
-    '98': {'label': 'Boursier', 'min_balance': 1.00, 'payout': 1.20},
-    '100': {'label': 'Alternant', 'min_balance': 0.30, 'payout': 0.50},
-    '97': {'label': 'Non-Boursier', 'min_balance': 3.30, 'payout': 0.00}  # Can sell but no profit
+    '98': {'label': 'Boursier', 'min_balance': 1.00, 'buyer_price': 1.50, 'seller_payout': 1.20},
+    '100': {'label': 'Alternant', 'min_balance': 0.30, 'buyer_price': 1.00, 'seller_payout': 0.50},
+    '97': {'label': 'Non-Boursier', 'min_balance': 3.30, 'buyer_price': 3.30, 'seller_payout': 3.30}
 }
 
 @router.post("/share-my-code", status_code=status.HTTP_201_CREATED)
@@ -22,13 +22,34 @@ def share_my_code(request: MarketOfferCreate):
     **Partager mon code (Création d'offre)**
 
     Permet à un vendeur de mettre son repas en vente.
-    1.  **Connexion Izly** : Vérifie les identifiants et récupère le profil complet.
-    2.  **Vérification Éligibilité** : Seuls les tarifs "Boursier" et "Alternant" peuvent vendre avec profit.
-    3.  **Vérification Solde** : S'assure que le compte Izly a assez de fonds.
-    4.  **Création Offre** : Crée une entrée `market_offers` avec statut `OPEN`.
+    1.  **Vérification Offres** : Un utilisateur ne peut avoir qu'une seule offre `OPEN` à la fois.
+    2.  **Connexion Izly** : Vérifie les identifiants et récupère le profil complet.
+    3.  **Vérification Éligibilité** : Seuls les tarifs "Boursier" et "Alternant" peuvent vendre avec profit.
+    4.  **Vérification Solde** : S'assure que le compte Izly a assez de fonds.
+    5.  **Création Offre** : Crée une entrée `market_offers` avec statut `OPEN`.
     
     Note: Le QR code de paiement n'est PAS stocké ici, il sera généré à la demande lors du `/book`.
     """
+    # 0. Check if user already has an OPEN offer (using email/login to find user_id first)
+    # We need the user_id. We can get it from profiles table if exists, or wait until we fetch/create profile.
+    # Let's do it after we have the seller_id (Step 4), OR check by email first if profile exists.
+    # Checking by email is safer to fail fast.
+    
+    existing_user = supabase.table("profiles").select("id").eq("email", request.izly_login).execute()
+    if existing_user.data:
+        seller_id_check = existing_user.data[0]["id"]
+        existing_offer = supabase.table("market_offers")\
+            .select("id")\
+            .eq("seller_id", seller_id_check)\
+            .eq("status", "OPEN")\
+            .execute()
+        
+        if existing_offer.data:
+            raise HTTPException(
+                status_code=400, 
+                detail="Vous avez déjà une offre en cours. Veuillez l'annuler ou attendre qu'elle soit vendue."
+            )
+
     # 1. Login to Izly and scrape ALL data (same as import-izly route)
     try:
         client = IzlyClient()
@@ -136,7 +157,8 @@ def share_my_code(request: MarketOfferCreate):
             "balance": current_balance,
             "tariff": tariff_info['label'],
             "min_balance_required": tariff_info['min_balance'],
-            "payout_on_sale": tariff_info['payout']
+            "buyer_price": tariff_info['buyer_price'],
+            "seller_payout": tariff_info['seller_payout']
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur création offre: {str(e)}")

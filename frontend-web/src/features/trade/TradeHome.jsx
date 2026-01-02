@@ -45,7 +45,10 @@ const TradeHome = ({ user, balance, onNavigate }) => {
                             <button className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-sm font-medium transition-colors">
                                 Recharger
                             </button>
-                            <button className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-sm font-medium text-gray-400 transition-colors">
+                            <button
+                                onClick={() => onNavigate('history')}
+                                className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-sm font-medium text-gray-400 transition-colors"
+                            >
                                 Historique
                             </button>
                         </div>
@@ -57,7 +60,7 @@ const TradeHome = ({ user, balance, onNavigate }) => {
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => onNavigate('map')}
+                        onClick={() => onNavigate('marketplace')}
                         className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center gap-4 aspect-square group hover:bg-white/5 transition-colors"
                     >
                         <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
